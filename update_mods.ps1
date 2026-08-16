@@ -71,7 +71,7 @@ try {
         [void][Native.Win32]::GetWindowRect($hWnd, [ref]$b)
         $sw = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds.Width
         $sh = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds.Height
-        [void][Native.Win32]::MoveWindow($hWnd, [int](($sw - ($b.Right - $b.Left) - 20) / 2), [int](($sh - ($b.Bottom - $b.Top) - 20) / 2), ($b.Right - $b.Left + 20), ($b.Bottom - $b.Top + 20), $true)
+        [void][Native.Win32]::MoveWindow($hWnd, [int](($sw - ($b.Right - $b.Left) - 40) / 2), [int](($sh - ($b.Bottom - $b.Top) - 10) / 2), ($b.Right - $b.Left + 40), ($b.Bottom - $b.Top + 10), $true)
     }
 } catch { }
 
@@ -130,7 +130,7 @@ for ($attempt = 1; $attempt -le $MaxRetries; $attempt++) {
         $catalog = Invoke-RestMethod -Uri $ApiUrl -TimeoutSec 90
         break
     } catch {
-        Write-Host "Попытка ${attempt} из ${MaxRetries}. Подождите.. Причина: $($_.Exception.Message)" -ForegroundColor DarkYellow
+        Write-Host "Попытка ${attempt} из ${MaxRetries}. $($_.Exception.Message)" -ForegroundColor DarkYellow
         if ($attempt -lt $MaxRetries) { Start-Sleep -Seconds 5 }
     }
 }
@@ -264,6 +264,11 @@ Write-Host ("`nИтог: актуальных — {0}, к обновлению �
 # --- Если обновлять нечего — выходим ---
 if ($outdated.Count -eq 0) {
     Write-Host "`nВсе моды актуальны. Обновление не требуется." -ForegroundColor Green
+
+# --- Предупреждение: игра запущена ---
+if (Get-Process -Name 'PEAK' -ErrorAction SilentlyContinue) {
+    Write-Host 'ВНИМАНИЕ: Игра PEAK запущена. Рекомендую выйти из игры!' -ForegroundColor Yellow
+}
     Write-Host "Спасибо за использование моего скрипта! По желанию подпишитесь на канал PonosNasral" -ForegroundColor Magenta
     try { [void](Read-Host "Нажмите Enter для выхода") } catch { }; exit 0
 }

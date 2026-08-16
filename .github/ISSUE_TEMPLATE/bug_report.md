@@ -1,38 +1,33 @@
 ---
-name: Bug report
-about: Create a report to help us improve
-title: ''
-labels: ''
+name: Отчёт об ошибке
+about: Сообщите о баге в PEAKUpdater
+title: '[Баг]: '
+labels: bug
 assignees: ''
-
 ---
 
-**Describe the bug**
-A clear and concise description of what the bug is.
+**Описание проблемы**
+Чётко и кратко опишите, что сломалось.
 
-**To Reproduce**
-Steps to reproduce the behavior:
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
+**Шаги воспроизведения**
+1. Запустить 'PEAKUpdater.exe'
+2. Дождаться окончания проверки модов
+3. ...
 
-**Expected behavior**
-A clear and concise description of what you expected to happen.
+**Ожидаемое поведение**
+Что должно было произойти.
 
-**Screenshots**
-If applicable, add screenshots to help explain your problem.
+**Фактическое поведение**
+Что произошло на самом деле. Если была ошибка — приведите её точный текст.
 
-**Desktop (please complete the following information):**
- - OS: [e.g. iOS]
- - Browser [e.g. chrome, safari]
- - Version [e.g. 22]
+**Окружение**
+- Версия PEAKUpdater: (правый клик по exe → Свойства → Подробно)
+- Версия Windows: [например, Windows 10]
+- Антивирус: [какой, включён ли]
+- Игра PEAK запущена: [да / нет]
 
-**Smartphone (please complete the following information):**
- - Device: [e.g. iPhone6]
- - OS: [e.g. iOS8.1]
- - Browser [e.g. stock browser, safari]
- - Version [e.g. 22]
+**Лог**
+Приложите содержимое файла `updater_log.txt` из папки `PEAK\BepInEx\plugins` (можно последние 30 строк).
 
-**Additional context**
-Add any other context about the problem here.
+**Скриншоты**
+Если применимо — добавьте скриншоты окна программы.

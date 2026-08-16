@@ -1,4 +1,4 @@
-﻿# ============================================================
+# ============================================================
 #  PEAK ThunderStore Mod Updater by PonosNasral
 #  Проверяет и обновляет моды из https://thunderstore.io/c/peak/
 #  Запуск -> автопроверка -> при наличии устаревших модов
@@ -71,11 +71,18 @@ try {
         [void][Native.Win32]::GetWindowRect($hWnd, [ref]$b)
         $sw = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds.Width
         $sh = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds.Height
-        [void][Native.Win32]::MoveWindow($hWnd, [int](($sw - ($b.Right - $b.Left)) / 2), [int](($sh - ($b.Bottom - $b.Top)) / 2), ($b.Right - $b.Left), ($b.Bottom - $b.Top), $true)
+        [void][Native.Win32]::MoveWindow($hWnd, [int](($sw - ($b.Right - $b.Left) - 20) / 2), [int](($sh - ($b.Bottom - $b.Top) - 20) / 2), ($b.Right - $b.Left + 20), ($b.Bottom - $b.Top + 20), $true)
     }
 } catch { }
 
 if (-not [Console]::IsOutputRedirected) { Clear-Host }
+
+# --- Заголовок окна консоли (после mode.com, иначе он сбрасывает титул на путь) ---
+try { $Host.UI.RawUI.WindowTitle = 'PEAK Mod Updater by PonosNasral' } catch { }
+try {
+    Add-Type -Name Title -Namespace Native -MemberDefinition '[DllImport("kernel32.dll", SetLastError=true, CharSet=CharSet.Unicode)] public static extern bool SetConsoleTitleW(string lpConsoleTitle);'
+    [void][Native.Title]::SetConsoleTitleW('PEAK Mod Updater by PonosNasral')
+} catch { }
 
 $ApiUrl     = 'https://thunderstore.io/c/peak/api/v1/package/'
 $BackupDir  = Join-Path $PluginsDir '.mod_backups'

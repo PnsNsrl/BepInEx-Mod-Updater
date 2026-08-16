@@ -474,6 +474,18 @@ $langMode = $false
 foreach ($a in @($args)) { if ("$a" -match '^[-/]lang$') { $langMode = $true } }
 
 if ($langMode) {
+    # Switch console to UTF-8 + CJK font BEFORE printing the menu (fix for Chinese)
+    try { & cmd /c 'chcp 65001 >nul' } catch { }
+    try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch { }
+    try {
+        $csF = '[StructLayout(LayoutKind.Sequential)] public struct CONSOLE_FONT_INFO_EX { public uint cbSize; public uint nFont; public short dwFontSizeX; public short dwFontSizeY; public int FontFamily; public int FontWeight; [MarshalAs(UnmanagedType.ByValTStr, SizeConst=32)] public string FaceName; } [DllImport("kernel32.dll", SetLastError=true)] public static extern bool SetCurrentConsoleFontEx(IntPtr hOut, bool bMax, ref CONSOLE_FONT_INFO_EX lp); [DllImport("kernel32.dll")] public static extern IntPtr GetStdHandle(int nStdHandle);'
+        Add-Type -Name FontL -Namespace Native -MemberDefinition $csF
+        $fiL = New-Object Native.FontL+CONSOLE_FONT_INFO_EX
+        $fiL.FaceName = 'SimSun'
+        $fiL.cbSize = [uint32][System.Runtime.InteropServices.Marshal]::SizeOf($fiL)
+        $fiL.dwFontSizeX = 14; $fiL.dwFontSizeY = 28; $fiL.FontFamily = 54; $fiL.FontWeight = 700
+        [void][Native.FontL]::SetCurrentConsoleFontEx([Native.FontL]::GetStdHandle(-11), $false, [ref]$fiL)
+    } catch { }
     Write-Host ''
     Write-Host $T.lang_title -ForegroundColor Cyan
     Write-Host $T.lang_menu

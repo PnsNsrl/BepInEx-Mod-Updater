@@ -1,20 +1,22 @@
 ---
-name: Feature request
-about: Suggest an idea for this project
-title: ''
-labels: ''
+name: Предложение функции
+about: Предложите идею для PEAKUpdater
+title: '[Идея]: '
+labels: enhancement
 assignees: ''
-
 ---
 
-**Is your feature request related to a problem? Please describe.**
-A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
+**Описание предложения**
+Чётко опишите, что вы хотите добавить или изменить в PEAKUpdater.
 
-**Describe the solution you'd like**
-A clear and concise description of what you want to happen.
+**Решаемая проблема**
+Какую проблему это решит? С чем сейчас неудобно?
 
-**Describe alternatives you've considered**
-A clear and concise description of any alternative solutions or features you've considered.
+**Желаемое поведение**
+Как это должно работать с точки зрения пользователя?
 
-**Additional context**
-Add any other context or screenshots about the feature request here.
+**Альтернативы**
+Рассматривали ли другие способы решить эту проблему?
+
+**Дополнительный контекст**
+Скриншоты, ссылки, примеры из других программ — всё, что поможет понять идею.

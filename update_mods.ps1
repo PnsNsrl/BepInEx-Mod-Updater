@@ -75,33 +75,6 @@ try {
     }
 } catch { }
 
-# --- Splash screen + animated progress bar ---
-$logo = @(
-    "         V MY YOUTUBE CHANNEL V",
-    "   ...#######..##....##...######..##....##...######..#######..##........",
-    "   ...##....##.###...##..##.......###...##..##.......##....##.##........",
-    "   ...#######..####..##..##.......####..##..##.......#######..##........",
-    "   ...##.......##.##.##...#####...##.##.##...#####...##..##...##........",
-    "   ...##.......##..####.......##..##..####.......##..##...##..##........",
-    "   ...##.......##...###.......##..##...###.......##..##...##..##........",
-    "   ...##.......##....##..######...##....##..######...##...##..########.."
-)
-if (-not [Console]::IsOutputRedirected) { Clear-Host }
-foreach ($l in $logo) {
-    $p = [int](($WinW - $l.Length) / 2)
-    Write-Host ((' ' * $p) + $l) -ForegroundColor Red
-}
-Write-Host ""
-$t = 'LOADING PEAK UPDATER..'
-Write-Host ((' ' * [int](($WinW - $t.Length) / 2)) + $t) -ForegroundColor Red
-for ($i = 1; $i -le 20; $i++) {
-    $bar = ("=" * $i)
-    $line = ("[{0}{1}] {2,3}%" -f $bar, ("." * (20 - $i)), ($i * 5))
-    $line = (' ' * [int](($WinW - $line.Length) / 2)) + $line
-    Write-Host ([string][char]13 + $line) -NoNewline -ForegroundColor Red
-    Start-Sleep -Milliseconds 150
-}
-Write-Host ""
 if (-not [Console]::IsOutputRedirected) { Clear-Host }
 
 $ApiUrl     = 'https://thunderstore.io/c/peak/api/v1/package/'

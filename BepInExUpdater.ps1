@@ -6,6 +6,8 @@
 # ============================================================
 
 $ErrorActionPreference = 'Stop'
+# Force TLS 1.2 (PS 5.1 defaults to TLS 1.0, ThunderStore rejects it)
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 $ScriptDir = $null
 try { if ($PSScriptRoot) { $ScriptDir = $PSScriptRoot } } catch {}
 if (-not $ScriptDir) {
@@ -251,15 +253,17 @@ function Get-SteamLibraries {
         }
     }
 
-    # 2) libraryfolders.vdf from every known root
-    foreach ($root in $steamRoots) {
+    # 2) libraryfolders.vdf from every known root (iterate over a snapshot!)
+    $vdfRoots = New-Object System.Collections.Generic.List[string]
+    foreach ($root in @($steamRoots.ToArray())) {
         $vdf = Join-Path $root 'steamapps\libraryfolders.vdf'
         if (Test-Path $vdf) {
             foreach ($m in [regex]::Matches((Get-Content $vdf -Raw), '"path"\s+"([^"]+)"')) {
-                $steamRoots.Add(($m.Groups[1].Value -replace '\\\\','\'))
+                $vdfRoots.Add(($m.Groups[1].Value -replace '\\\\','\'))
             }
         }
     }
+    foreach ($r in $vdfRoots) { if (-not $steamRoots.Contains($r)) { $steamRoots.Add($r) } }
 
     # 3) Fallback: scan all fixed drives for SteamLibrary
     if ($steamRoots.Count -eq 0) {
@@ -296,14 +300,14 @@ function Find-BepInExGames([System.Collections.Generic.List[string]]$libs) {
     $games = New-Object System.Collections.Generic.List[object]
     $seen = New-Object System.Collections.Generic.HashSet[string]([System.StringComparer]::OrdinalIgnoreCase)
     foreach ($lib in $libs) {
-        $sa = Join-Path $lib 'steamapps'
+        $sa = Join-Path $lib 'steamapps\common'
         if (-not (Test-Path $sa)) { continue }
         foreach ($dir in (Get-ChildItem $sa -Directory -ErrorAction SilentlyContinue)) {
             $bep = Join-Path $dir.FullName 'BepInEx'
             if (-not (Test-Path $bep)) { continue }
             if (-not $seen.Add($dir.FullName)) { continue }
             $games.Add([pscustomobject]@{
-                Name    = Get-GameNameFromManifest $sa $dir.Name
+                Name    = Get-GameNameFromManifest (Join-Path $lib 'steamapps') $dir.Name
                 Folder  = $dir.Name
                 Path    = $dir.FullName
                 Plugins = (Join-Path $bep 'plugins')
@@ -328,20 +332,12 @@ function Test-CommunityExists([string]$slug) {
     }
 }
 
-function Get-LatestModVersion([string]$community, [string]$fullModName) {
-    # fullModName = "Author-ModName"
-    # 1) experimental API
-    try {
-        $j = Invoke-RestMethod -Uri "$TS/api/experimental/package/$community/$fullModName/" -TimeoutSec 20
-        if ($j.latest.version_number) { return @{ Version = $j.latest.version_number; Download = $j.latest.download_url } }
-    } catch {}
-    # 2) parse package page
-    try {
-        $parts = $fullModName -split '-', 2
-        $html = (Invoke-WebRequest -Uri "$TS/c/$community/p/$($parts[0])/$($parts[1])/" -UseBasicParsing -TimeoutSec 20).Content
-        $m = [regex]::Match($html, 'v?(\d+\.\d+\.\d+[^"<\s]*)')
-        if ($m.Success) { return @{ Version = $m.Groups[1].Value; Download = "$TS/package/download/$community/$fullModName/$($m.Groups[1].Value)/" } }
-    } catch {}
+function Get-Catalog([string]$community) {
+    # Community-scoped legacy API: one request returns ALL packages with versions
+    $url = "$TS/c/$community/api/v1/package/"
+    for ($attempt = 1; $attempt -le 5; $attempt++) {
+        try { return Invoke-RestMethod -Uri $url -TimeoutSec 90 } catch { Start-Sleep -Seconds 3 }
+    }
     return $null
 }
 
@@ -410,6 +406,23 @@ try {
     Write-Host ($T.comm_ok + ' ' + $slug) -ForegroundColor Yellow
     Write-Log "Community: $slug"
 
+    # Fetch full catalog in ONE request (fast, reliable)
+    $catalog = Get-Catalog $slug
+    if (-not $catalog) {
+        Write-Host $T.no_comm -ForegroundColor Red
+        Write-Log 'Catalog fetch failed'
+        Pause-Exit 1
+    }
+    $byName = @{}
+    $byFullName = @{}
+    foreach ($p in $catalog) {
+        $k = $p.name.ToLower()
+        if (-not $byName.ContainsKey($k)) { $byName[$k] = $p }
+        $byFullName[$p.full_name.ToLower()] = $p
+    }
+    Write-Host ('Packages in catalog: {0}' -f $catalog.Count) -ForegroundColor Gray
+    Write-Log "Catalog packages: $($catalog.Count)"
+
     # Collect mods
     $plugins = $game.Plugins
     if (-not (Test-Path $plugins)) { New-Item -ItemType Directory -Path $plugins -Force | Out-Null }
@@ -459,11 +472,15 @@ try {
     Write-Host $T.checking -ForegroundColor Cyan
     $toUpdate = New-Object System.Collections.Generic.List[object]
     foreach ($m in $mods) {
-        $latest = Get-LatestModVersion $slug $m.Name
-        if (-not $latest) {
+        $pkg = $null
+        $folderKey = ((Split-Path -Leaf $m.Dir) -replace '-\d+(\.\d+)*(-[\w.]+)?$', '').ToLower()
+        if ($byFullName.ContainsKey($folderKey)) { $pkg = $byFullName[$folderKey] }
+        if (-not $pkg -and $byName.ContainsKey($m.Name.ToLower())) { $pkg = $byName[$m.Name.ToLower()] }
+        if (-not $pkg) {
             Write-Host ("  ? $($m.Name) ($($T.latest) $($T.unknown_ver))") -ForegroundColor DarkGray
             continue
         }
+        $latest = @{ Version = $pkg.versions[0].version_number; Download = $pkg.versions[0].download_url }
         $cmp = Compare-Versions $latest.Version $m.Version
         if ($cmp -gt 0) {
             Write-Host ("  ! {0}  {1} {2} -> {3}" -f $m.Name, $T.installed, $m.Version, $latest.Version) -ForegroundColor Yellow

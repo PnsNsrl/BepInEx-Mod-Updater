@@ -671,8 +671,8 @@ if ($games.Count -eq 1) {
 $PluginsDir = $game.Plugins
 if (-not (Test-Path -LiteralPath $PluginsDir)) { New-Item -ItemType Directory -Path $PluginsDir -Force | Out-Null }
 
-# --- Log file ---
-$LogFile = Join-Path $PluginsDir 'updater_log.txt'
+# --- Log file (next to the program, not inside the mods folder) ---
+$LogFile = Join-Path $BaseDir 'updater_log.txt'
 try { Start-Transcript -Path $LogFile -Append | Out-Null } catch { }
 
 $BackupDir  = Join-Path $PluginsDir '.mod_backups'

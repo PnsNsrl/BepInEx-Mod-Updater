@@ -589,17 +589,21 @@ function Find-BepInExGames([System.Collections.Generic.List[string]]$libs) {
 $TS = 'https://thunderstore.io'
 
 function Test-CommunityExists([string]$slug) {
-    try {
-        $r = Invoke-WebRequest -Uri "$TS/c/$slug/" -UseBasicParsing -Method Head -TimeoutSec 15
-        return ($r.StatusCode -eq 200)
-    } catch {
+    # 10 attempts: a single network hiccup must not look like "no community"
+    for ($attempt = 1; $attempt -le 10; $attempt++) {
         try {
-            $r = Invoke-WebRequest -Uri "$TS/c/$slug/" -UseBasicParsing -TimeoutSec 15
-            return ($r.StatusCode -eq 200)
-        } catch { return $false }
+            $r = Invoke-WebRequest -Uri "$TS/c/$slug/" -UseBasicParsing -Method Head -TimeoutSec 15
+            if ($r.StatusCode -eq 200) { return $true }
+        } catch {
+            try {
+                $r = Invoke-WebRequest -Uri "$TS/c/$slug/" -UseBasicParsing -TimeoutSec 15
+                if ($r.StatusCode -eq 200) { return $true }
+            } catch { }
+        }
+        if ($attempt -lt 10) { Start-Sleep -Seconds 3 }
     }
+    return $false
 }
-
 # --- Version comparison (semver-like) ---
 function Compare-Versions([string]$a, [string]$b) {
     $pa = ($a -split '[-+]')[0] -split '\.' | ForEach-Object { [int]($_ -replace '\D', '0') }

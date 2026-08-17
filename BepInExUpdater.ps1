@@ -366,7 +366,7 @@ try {
     foreach ($l in $libs) { Write-Host "  [$($T.found_libs)] $l" -ForegroundColor DarkGray }
     Write-Log "Libraries: $($libs -join '; ')"
 
-    $games = Find-BepInExGames $libs
+    $games = @(Find-BepInExGames $libs)
     if ($games.Count -eq 0) {
         Write-Host $T.found_none -ForegroundColor Red
         Write-Log 'No games found'

@@ -1,154 +1,25 @@
-﻿# 🏔️ PEAK Mod Updater
+# BepInEx Mod Updater (ThunderStore)
 
-![version](https://img.shields.io/badge/version-1.0-red)
-![platform](https://img.shields.io/badge/platform-Windows-blue)
-![language](https://img.shields.io/badge/PowerShell-5.1%2B-blue)
-![license](https://img.shields.io/badge/license-MIT-green)
+Universal mod updater for ANY game with BepInEx and a ThunderStore community. No launcher required!
 
-> **Автоматическое обновление модов для игры PEAK напрямую с [ThunderStore](https://thunderstore.io/c/peak/) — без установки лаунчера.**
+## Features
+- Scans ALL Steam libraries on ALL drives (C:, D:, ...) automatically
+- Detects every installed game with BepInEx
+- Matches games to their ThunderStore community automatically
+- Compares installed mod versions with the latest on ThunderStore
+- Updates outdated mods in one click with automatic backups and rollback on errors
+- Warns if the game is running and if mod dependencies are missing
+- 6 languages: English, Русский, Español, Português, Deutsch, Français
 
-Программа сама находит установленные моды, сравнивает версии с ThunderStore, скачивает и устанавливает обновления — с бэкапами и откатом на случай ошибки.
----
+## Usage
+1. Run `BepInExUpdater.ps1` (or the compiled exe) from anywhere
+2. Select a game from the list (if several are found)
+3. Review the check results and confirm the update
 
-## ✨ Возможности
+## Language
+Run with the `/lang` argument to pick a language. It is saved to `lang.txt` next to the script and auto-detected on next start.
 
-- 🔍 **Автопроверка всех модов** — сравнение версий с каталогом ThunderStore (semver: понимает, что `1.2.10 > 1.2.9`)
-- ⬇️ **Скачивание и установка обновлений** в один клик (Да — 1 / Нет — 2)
-- 💾 **Бэкапы перед обновлением** — старые версии сохраняются в `.mod_backups` (хранятся последние 3 на мод)
-- ↩️ **Автоматический откат** — если обновление упало, мод возвращается на место
-- 🧩 **Проверка зависимостей** — предупредит о недостающих зависимостях обновляемых модов
-- 🛡️ **Проверка целостности** — сигнатура zip + сверка размера файла с данными ThunderStore
-- 📜 **Лог-файл** — каждый запуск пишется в `updater_log.txt`
-- 🚫 **Защита от запуска не из папки игры** — программа проверяет, что лежит в `PEAK\BepInEx\plugins`
-- ⚠️ **Предупреждение о запущенной игре** — заблокированные файлы не дадут обновиться
-- 🕳️ **Детект проблемных модов** — пустые папки, битые `manifest.json`, «голые» .dll вне папок
-- 🔁 **Устойчивость к сбоям сети** — до 10 повторных попыток скачивания каталога и архивов
-- 🌍 **6 языков интерфейса** — автоопределение по языку Windows + ручной выбор
-
-## ⚙️ Требования
-
-| Требование | Описание |
-|---|---|
-| ОС | Windows 10 / 11 |
-| Игра | PEAK (Steam) с установленным [BepInEx](https://thunderstore.io/c/peak/p/BepInEx/BepInExPack_PEAK/) |
-| Интернет | доступ к `thunderstore.io` |
-| Права | запись в папку игры |
-
-## 📦 Установка
-
-### Способ 1: готовый .exe (простой)
-
-1. Скачайте `PEAKUpdater.exe` из раздела [**Releases**](../../releases)
-2. Переместите файл в папку игры:
-   ```
-   Steam\steamapps\common\PEAK\BepInEx\plugins\
-   ```
-3. Запустите `PEAKUpdater.exe`
-
-### Способ 2: из исходника
-
-1. Скачайте `update_mods.ps1`
-2. Переместите в `PEAK\BepInEx\plugins\`
-3. Запустите одним из способов:
-   - двойным кликом через `update_mods.bat` (скачайте его тоже), либо
-   - в PowerShell:
-     ```powershell
-     powershell -ExecutionPolicy Bypass -File update_mods.ps1
-     ```
-
-> ⚠️ Программа откажется работать, если лежит не в `PEAK\BepInEx\plugins` — так она защищает вас от «обновления» случайной папки.
-
-## 🌍 Языки / Languages
-
-Программа говорит на **6 языках** — язык выбирается автоматически по языку Windows:
-
-| Язык | Language | Код |
-|---|---|---|
-| 🇬🇧 English | English | `en` |
-| 🇷🇺 Русский | Russian | `ru` |
-| 🇨🇳 中文（简体） | Chinese (Simplified) | `zh` |
-| 🇪🇸 Español | Spanish | `es` |
-| 🇧🇷 Português (BR) | Portuguese | `pt` |
-| 🇩🇪 Deutsch | German | `de` |
-| 🇫🇷 Français | French | `fr` |
-
-**Как сменить язык:**
-1. Запустите программу с аргументом `/lang`:
-   - создайте ярлык на `PEAKUpdater.exe`, откройте свойства и допишите ` /lang` после пути;
-   - либо в PowerShell: `.\PEAKUpdater.exe /lang`
-2. Выберите язык цифрой (1–6) — выбор сохранится в файл `lang.txt` рядом с программой
-3. Чтобы вернуться к автоопределению — просто удалите `lang.txt`
-
-
-## 🎮 Как пользоваться
-
-1. Запустите программу
-2. Программа смотрит каталог ThunderStore и сканирует ваши моды
-3. Появится отчёт. Пример отчёта:
-   ```
-   --- РЕЗУЛЬТАТ ПРОВЕРКИ ---
-     [OK]        Mode1 1.7.2
-     [UPDATE]    Mode2: 3.0.1  ->  3.0.2
-     [NOT FOUND] Mode3 1.0.0 (нет на ThunderStore, пропущен)
-   ```
-4. Если есть обновления — программа спросит: `Хотите ли вы обновить данные моды? (Да - 1, Нет - 2)`
-5. После обновления — итог и путь к бэкапам
-
-## 🛡️ Безопасность
-
-- Перед каждым обновлением старая версия мода **перемещается в бэкап**, а не удаляется
-- Если скачивание или распаковка упали — **автоматический откат** на место
-- Скачанный архив проверяется по **zip-сигнатуре (PK)** и **точному размеру** из API ThunderStore
-- Программа ничего не удаляет за пределами папок обновляемых модов
-
-## 🔧 Сборка .exe из исходника
-
-```powershell
-Install-Module ps2exe -Scope CurrentUser
-Invoke-ps2exe -inputFile .\update_mods.ps1 -outputFile .\PEAKUpdater.exe `
-    -title 'PEAK Mod Updater' -version '1.0'
-```
-
-## ❓ FAQ
-
-**Программа пишет «находится не в папке игры!»**
-Переместите её в `PEAK\BepInEx\plugins` — она работает только оттуда.
-
-**Мод в списке `[NOT FOUND]`**
-Такого мода нет на ThunderStore (локальный/удалённый мод) — он просто пропускается.
-
-**Что за «голые» .dll в отчёте?**
-Это моды, кинутые в `plugins` одним файлом без папки. Их версию определить нельзя. Распакуйте zip мода папкой — и обновление станет автоматическим.
-
-**Игра запущена — можно обновляться?**
-Программа предупредит и спросит. Лучше закрыть игру: файлы модов заблокированы, обновление может упасть.
-
-**Где старые версии модов?**
-В папке `.mod_backups` внутри `plugins`. Хранятся последние 3 версии каждого мода, старые чистятся автоматически.
-
-**Как поменять язык интерфейса?**
-Запустите с аргументом `/lang` и выберите язык цифрой — подробности в разделе «Языки» выше.
-
-## 🤝 Участие
-
-Нашли баг или есть идея? Создайте [Issue](../../issues) или присылайте Pull Request!
-
-## 👤 Автор
-
-**PonosNasral**
-
-📺 Подписывайтесь на мой YouTube-канал!
-
----
-
-## 📜 Changelog
-
-### v1.0
-- Первый публичный релиз
-- Проверка и обновление модов с ThunderStore
-- Бэкапы (3 последних на мод) и автоматический откат
-- Проверка зависимостей и целостности загрузок
-- Лог-файл `updater_log.txt`
-- Защита от запуска не из папки игры
-- Красивая консоль: заставка, крупный шрифт, центрирование, прокрутка
-- 🌍 Локализация: 6 языков (en/ru/es/pt/de/fr) с автоопределением и ручным выбором (`/lang`)
+## Notes
+- Mods must be installed as folders (ThunderStore style) in `BepInEx/plugins` for version detection to work.
+- Old mod versions are backed up to `BepInEx/plugins/.mod_backups` (last 3 per mod are kept).
+- A log is written to `BepInEx/plugins/updater_log.txt` of the selected game.

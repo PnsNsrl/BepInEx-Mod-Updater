@@ -6,7 +6,15 @@
 # ============================================================
 
 $ErrorActionPreference = 'Stop'
-$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$ScriptDir = $null
+try { if ($PSScriptRoot) { $ScriptDir = $PSScriptRoot } } catch {}
+if (-not $ScriptDir) {
+    try {
+        $cmdLine = [Environment]::GetCommandLineArgs()
+        if ($cmdLine -and $cmdLine[0]) { $ScriptDir = Split-Path -Parent ([IO.Path]::GetFullPath($cmdLine[0])) }
+    } catch {}
+}
+if (-not $ScriptDir) { $ScriptDir = (Get-Location).Path }
 $LogLines = New-Object System.Collections.Generic.List[string]
 
 # ---------- LOG ----------

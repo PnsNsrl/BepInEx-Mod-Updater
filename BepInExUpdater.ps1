@@ -33,6 +33,10 @@ $L.en = @{
     select_game    = 'Select a game (number):'
     one_game       = 'Game found:'
     no_comm        = 'No ThunderStore community found for this game!'
+    conn_wait      = 'Trying to connect to ThunderStore, please wait...'
+    conn_fail      = 'Could not connect to ThunderStore. Check if the site is working.'
+    conn_hint_site = 'If the site does not load - the problem is your connection'
+    conn_hint_github = 'If the site loads - report the problem on Github'
     comm_ok        = 'ThunderStore community:'
     catalog_cnt    = 'Mods found in catalog: {0}'
     banner         = '=== BepInEx Mod Updater (ThunderStore) by PonosNasral ==='
@@ -98,6 +102,10 @@ $L.ru = @{
     select_game    = 'Выберите игру (номер):'
     one_game       = 'Игра найдена:'
     no_comm        = 'Сообщество ThunderStore для этой игры не найдено!'
+    conn_wait      = 'Пытаемся подключиться к ThunderStore, пожалуйста подождите...'
+    conn_fail      = 'Не удалось подключиться к ThunderStore. Проверьте работоспособность сайта.'
+    conn_hint_site = 'Если сайт не загружается - проблема в вашем соединении'
+    conn_hint_github = 'Если сайт загружается - напишите о проблеме на Github'
     comm_ok        = 'Сообщество ThunderStore:'
     catalog_cnt    = 'Найдено модов в каталоге: {0}'
     banner         = '=== BepInEx Mod Updater (ThunderStore) by PonosNasral ==='
@@ -163,6 +171,10 @@ $L.es = @{
     select_game    = 'Elige un juego (número):'
     one_game       = 'Juego encontrado:'
     no_comm        = '¡No se encontró comunidad de ThunderStore para este juego!'
+    conn_wait      = 'Intentando conectarse a ThunderStore, por favor espera...'
+    conn_fail      = 'No se pudo conectar a ThunderStore. Comprueba si el sitio funciona.'
+    conn_hint_site = 'Si el sitio no carga - el problema está en tu conexión'
+    conn_hint_github = 'Si el sitio carga - informa del problema en Github'
     comm_ok        = 'Comunidad de ThunderStore:'
     catalog_cnt    = 'Mods encontrados en el catálogo: {0}'
     banner         = '=== BepInEx Mod Updater (ThunderStore) by PonosNasral ==='
@@ -228,6 +240,10 @@ $L.pt = @{
     select_game    = 'Escolha um jogo (número):'
     one_game       = 'Jogo encontrado:'
     no_comm        = 'Nenhuma comunidade do ThunderStore encontrada para este jogo!'
+    conn_wait      = 'Tentando conectar ao ThunderStore, por favor aguarde...'
+    conn_fail      = 'Não foi possível conectar ao ThunderStore. Verifique se o site está funcionando.'
+    conn_hint_site = 'Se o site não carrega - o problema está na sua conexão'
+    conn_hint_github = 'Se o site carrega - relate o problema no Github'
     comm_ok        = 'Comunidade do ThunderStore:'
     catalog_cnt    = 'Mods encontrados no catálogo: {0}'
     banner         = '=== BepInEx Mod Updater (ThunderStore) by PonosNasral ==='
@@ -293,6 +309,10 @@ $L.de = @{
     select_game    = 'Spiel wählen (Nummer):'
     one_game       = 'Spiel gefunden:'
     no_comm        = 'Keine ThunderStore-Community für dieses Spiel gefunden!'
+    conn_wait      = 'Versuche, eine Verbindung zu ThunderStore herzustellen, bitte warten...'
+    conn_fail      = 'Keine Verbindung zu ThunderStore möglich. Prüfe, ob die Seite funktioniert.'
+    conn_hint_site = 'Wenn die Seite nicht lädt - liegt das Problem an deiner Verbindung'
+    conn_hint_github = 'Wenn die Seite lädt - melde das Problem auf Github'
     comm_ok        = 'ThunderStore-Community:'
     catalog_cnt    = 'Mods im Katalog gefunden: {0}'
     banner         = '=== BepInEx Mod Updater (ThunderStore) by PonosNasral ==='
@@ -358,6 +378,10 @@ $L.fr = @{
     select_game    = 'Choisissez un jeu (numéro) :'
     one_game       = 'Jeu trouvé :'
     no_comm        = 'Aucune communauté ThunderStore trouvée pour ce jeu !'
+    conn_wait      = 'Tentative de connexion à ThunderStore, veuillez patienter...'
+    conn_fail      = 'Impossible de se connecter à ThunderStore. Vérifiez que le site fonctionne.'
+    conn_hint_site = 'Si le site ne se charge pas - le problème vient de votre connexion'
+    conn_hint_github = 'Si le site se charge - signalez le problème sur Github'
     comm_ok        = 'Communauté ThunderStore :'
     catalog_cnt    = 'Mods trouvés dans le catalogue : {0}'
     banner         = '=== BepInEx Mod Updater (ThunderStore) by PonosNasral ==='
@@ -589,18 +613,53 @@ function Find-BepInExGames([System.Collections.Generic.List[string]]$libs) {
 $TS = 'https://thunderstore.io'
 
 function Test-CommunityExists([string]$slug) {
-    # 10 attempts: a single network hiccup must not look like "no community"
-    for ($attempt = 1; $attempt -le 10; $attempt++) {
-        try {
-            $r = Invoke-WebRequest -Uri "$TS/c/$slug/" -UseBasicParsing -Method Head -TimeoutSec 15
-            if ($r.StatusCode -eq 200) { return $true }
-        } catch {
-            try {
-                $r = Invoke-WebRequest -Uri "$TS/c/$slug/" -UseBasicParsing -TimeoutSec 15
-                if ($r.StatusCode -eq 200) { return $true }
-            } catch { }
+    # Returns: 'ok' (community exists), 'notfound' (404 - no community), 'network' (connection failed)
+    $sw = [System.Diagnostics.Stopwatch]::StartNew()
+    $warned = $false
+    for ($attempt = 1; $attempt -le 3; $attempt++) {
+        if ($attempt -gt 1 -and -not $warned -and $sw.Elapsed.TotalSeconds -gt 10) {
+            Write-Host $T.conn_wait -ForegroundColor Yellow
+            $warned = $true
         }
-        if ($attempt -lt 10) { Start-Sleep -Seconds 3 }
+        try {
+            $r = Invoke-WebRequest -Uri "$TS/c/$slug/" -UseBasicParsing -Method Head -TimeoutSec 10
+            if ($r.StatusCode -eq 200) { return 'ok' }
+            if ($r.StatusCode -eq 404) { return 'notfound' }
+        } catch {
+            $code = 0
+            try { $code = [int]$_.Exception.Response.StatusCode } catch { }
+            if ($code -eq 404) { return 'notfound' }
+            try {
+                $r = Invoke-WebRequest -Uri "$TS/c/$slug/" -UseBasicParsing -TimeoutSec 10
+                if ($r.StatusCode -eq 200) { return 'ok' }
+                if ($r.StatusCode -eq 404) { return 'notfound' }
+            } catch {
+                $code = 0
+                try { $code = [int]$_.Exception.Response.StatusCode } catch { }
+                if ($code -eq 404) { return 'notfound' }
+            }
+        }
+        if (-not $warned -and $sw.Elapsed.TotalSeconds -gt 10) {
+            Write-Host $T.conn_wait -ForegroundColor Yellow
+            $warned = $true
+        }
+        if ($attempt -lt 3) { Start-Sleep -Seconds 3 }
+    }
+    return 'network'
+}
+
+function Test-ThunderStoreOnline {
+    # Checks the ThunderStore main page: true = site reachable
+    for ($attempt = 1; $attempt -le 3; $attempt++) {
+        try {
+            $r = Invoke-WebRequest -Uri "$TS/" -UseBasicParsing -Method Head -TimeoutSec 10
+            if ($r.StatusCode -eq 200) { return $true }
+        } catch { }
+        try {
+            $r = Invoke-WebRequest -Uri "$TS/" -UseBasicParsing -TimeoutSec 10
+            if ($r.StatusCode -eq 200) { return $true }
+        } catch { }
+        if ($attempt -lt 3) { Start-Sleep -Seconds 3 }
     }
     return $false
 }
@@ -682,8 +741,20 @@ $MaxRetries = 10
 #  COMMUNITY DETECTION & CATALOG
 # ============================================================
 $slug = $game.Folder.ToLower()
-if (-not (Test-CommunityExists $slug)) {
+$commStatus = Test-CommunityExists $slug
+if ($commStatus -eq 'notfound') {
     Write-Host "`n$($T.no_comm)" -ForegroundColor Red
+    try { Stop-Transcript | Out-Null } catch { }
+    try { [void](Read-Host $T.enter_exit) } catch { }
+    exit 1
+}
+if ($commStatus -eq 'network') {
+    Write-Host "`n$($T.conn_fail)" -ForegroundColor Red
+    if (Test-ThunderStoreOnline) {
+        Write-Host $T.conn_hint_github -ForegroundColor Yellow
+    } else {
+        Write-Host $T.conn_hint_site -ForegroundColor Yellow
+    }
     try { Stop-Transcript | Out-Null } catch { }
     try { [void](Read-Host $T.enter_exit) } catch { }
     exit 1

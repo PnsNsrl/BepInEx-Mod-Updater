@@ -124,7 +124,7 @@ In the `.mod_backups` folder inside `plugins`. The last 3 versions of each mod a
 
 **Как сменить язык:**
 1. Запустите программу с аргументом `/lang`:
-   - создайте ярлык на `BepInExUpdater.exe`, откройте свойства и допишите ` /lang` после пути;
+   - создайте ярлык `BepInExUpdater.exe`, откройте свойства и допишите ` /lang` после пути;
    - либо в PowerShell: `.\BepInExUpdater.exe /lang`
 2. Выберите язык цифрой (1–6) — выбор сохранится в файл `lang.txt` рядом с программой
 3. Чтобы вернуться к автоопределению — просто удалите `lang.txt`

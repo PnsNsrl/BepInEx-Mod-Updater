@@ -606,7 +606,7 @@ function Find-BepInExGames([System.Collections.Generic.List[string]]$libs) {
             })
         }
     }
-    return $games
+    return ($games | Sort-Object { $_.Name })
 }
 
 # ---------- THUNDERSTORE HELPERS ----------
@@ -821,6 +821,9 @@ Get-ChildItem -LiteralPath $PluginsDir -Directory | Where-Object { $_.Name -ne '
         Version = $m.version_number
     }
 }
+
+# Sort by displayed mod name (manifest name, without "Author-" prefix) so the A-Z output matches what the user sees
+$installed = @($installed | Sort-Object { $_.Name })
 
 Write-Host ($T.installed_cnt -f $installed.Count) -ForegroundColor Gray
 

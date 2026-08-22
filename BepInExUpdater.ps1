@@ -596,12 +596,22 @@ function Find-BepInExGames([System.Collections.Generic.List[string]]$libs) {
         if (-not (Test-Path $sa)) { continue }
         foreach ($dir in (Get-ChildItem $sa -Directory -ErrorAction SilentlyContinue)) {
             $bep = Join-Path $dir.FullName 'BepInEx'
-            if (-not (Test-Path $bep)) { continue }
+            if (-not (Test-Path $bep)) {
+                # Nested install fallback (e.g. common/Game/Game/BepInEx): search up to 2 levels deeper
+                $nestedBep = $null
+                try {
+                    $nestedBep = Get-ChildItem $dir.FullName -Directory -Recurse -Depth 2 -Filter 'BepInEx' -ErrorAction SilentlyContinue |
+                        Sort-Object { $_.FullName.Length } |
+                        Select-Object -First 1
+                } catch { }
+                if (-not $nestedBep) { continue }
+                $bep = $nestedBep.FullName
+            }
             if (-not $seen.Add($dir.FullName)) { continue }
             $games.Add([pscustomobject]@{
                 Name    = Get-GameNameFromManifest (Join-Path $lib 'steamapps') $dir.Name
                 Folder  = $dir.Name
-                Path    = $dir.FullName
+                Path    = (Split-Path -Parent $bep)
                 Plugins = (Join-Path $bep 'plugins')
             })
         }
@@ -740,7 +750,7 @@ $MaxRetries = 10
 # ============================================================
 #  COMMUNITY DETECTION & CATALOG
 # ============================================================
-$slug = $game.Folder.ToLower()
+$slug = ($game.Folder.ToLower() -replace '\s+', '-')
 $commStatus = Test-CommunityExists $slug
 if ($commStatus -eq 'notfound') {
     Write-Host "`n$($T.no_comm)" -ForegroundColor Red
